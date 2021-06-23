@@ -1,0 +1,83 @@
+package sdk
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/okta/okta-sdk-golang/v2/okta"
+)
+
+type ListGroupPushResponse struct {
+	Mappings []GroupPushMapping `json:"mappings"`
+}
+
+type GroupPushMapping struct {
+	MappingID         string `json:"mappingId"`
+	Status            string `json:"status"`
+	SourceUserGroupId string `json:"sourceUserGroupId"`
+}
+
+func (m *ApiSupplement) GetGroupPushMapping(ctx context.Context, appID, groupID string) (*GroupPushMapping, *okta.Response, error) {
+	url := fmt.Sprintf("/api/internal/instance/%s/grouppush", appID)
+	req, err := m.RequestExecutor.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	listGroupPushResponse := &ListGroupPushResponse{}
+	resp, err := m.RequestExecutor.Do(ctx, req, listGroupPushResponse)
+
+	for _, mapping := range listGroupPushResponse.Mappings {
+		if mapping.MappingID == groupID {
+			return &mapping, resp, err
+		}
+	}
+
+	return nil, resp, err
+}
+
+func (m *ApiSupplement) CreateGroupPushMapping(ctx context.Context, appID, groupID, status string) (*GroupPushMapping, *okta.Response, error) {
+	url := fmt.Sprintf("/api/internal/instance/%s/grouppush", appID)
+	reqBody := map[string]string{
+		"status":      status,
+		"userGroupId": groupID,
+	}
+	req, err := m.RequestExecutor.NewRequest(http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	groupPushMapping := &GroupPushMapping{}
+	resp, err := m.RequestExecutor.Do(ctx, req, groupPushMapping)
+	return groupPushMapping, resp, err
+}
+
+func (m *ApiSupplement) UpdateGroupPushMapping(ctx context.Context, appID, mappingID, status string) (*GroupPushMapping, *okta.Response, error) {
+	url := fmt.Sprintf("/api/internal/instance/%s/grouppush/%s", appID, mappingID)
+	reqBody := map[string]string{
+		"status": status,
+	}
+	req, err := m.RequestExecutor.NewRequest(http.MethodPut, url, reqBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	groupPushMapping := &GroupPushMapping{}
+	resp, err := m.RequestExecutor.Do(ctx, req, groupPushMapping)
+	return groupPushMapping, resp, err
+}
+
+func (m *ApiSupplement) DeleteGroupPushMapping(ctx context.Context, appID, mappingID string) (*okta.Response, error) {
+	url := fmt.Sprintf("/api/internal/instance/%s/grouppush/%s/delete", appID, mappingID)
+	reqBody := map[string]bool{
+		"deleteAppGroup": true,
+	}
+	req, err := m.RequestExecutor.NewRequest(http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := m.RequestExecutor.Do(ctx, req, nil)
+	return resp, err
+}
