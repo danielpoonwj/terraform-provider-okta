@@ -42,7 +42,7 @@ func (m *ApiSupplement) GetGroupPushMapping(ctx context.Context, appID, groupID 
 	resp, err := m.RequestExecutor.Do(ctx, req, listGroupPushResponse)
 
 	for _, mapping := range listGroupPushResponse.Mappings {
-		if mapping.MappingID == groupID {
+		if mapping.SourceUserGroupId == groupID {
 			return &mapping, resp, err
 		}
 	}
